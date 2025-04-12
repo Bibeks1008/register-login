@@ -47,7 +47,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'user',
     'Abstraction',
-    'file-upload',
+    'upload',
 ]
 
 MIDDLEWARE = [
@@ -170,3 +170,61 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+LOGGING = {
+    # Define the logging version
+    'version': 1,
+
+    # Enable the existing loggers
+    'disable_existing_loggers': False,
+
+    'filters': {
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+        'user_idx': {
+            '()': 'shared.helpers.logging_helper.UserIDXFilter'
+        },
+    },
+
+    # Define the formatters
+    'formatters': {
+            'verbose': {
+            'format': '[%(levelname)s] [%(asctime)s] [%(module)s] [%(lineno)s] [%(user_idx)s] [%(message)s] ',
+            },
+    },
+
+    # Define the handlers
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'filters': ['user_idx'],
+            'formatter': 'verbose'
+        },
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filters': ['user_idx'],
+            'filename': 'logs.log',
+            'formatter': 'verbose',
+            'encoding': 'utf-8'
+        },
+    },
+
+   # Define the loggers
+    'loggers': {
+        'django': {
+            'level': 'INFO',
+            'handlers': ['console','file'],
+            'propagate': True,
+        },
+
+        #database query logger
+        # 'django.db.backends': {
+        #     'level': 'DEBUG',
+        #     'handlers': ['console'],
+        # }
+    },
+
+}

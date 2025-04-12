@@ -8,6 +8,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from Abstraction.builders.response_builder import ResponseBuilder
 from user.serializers.auth_serializer import UserSerializer, LoginSerializer, PasswordResetSerializer
+from shared.helpers.logging_helper import logger
 
 class RegisterUserAPIView(APIView):
     permission_classes = [AllowAny]
@@ -50,6 +51,7 @@ class LoginAPIView(APIView):
         # Update last_login field
         user.last_login = timezone.now()
         user.save(update_fields=["last_login"])
+        logger.info(f"user data is =>  {user}")
 
         refresh = RefreshToken.for_user(user)
         access_token = refresh.access_token
@@ -86,5 +88,6 @@ class PasswordResetAPIView(APIView):
         
         user.set_password(new_password)
         user.save()
+
         
         return response_builder.result_object({}).success().ok_200().message("Password has been reset successfully").get_response()
