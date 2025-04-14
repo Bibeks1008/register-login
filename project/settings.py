@@ -32,6 +32,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['0.0.0.0']
 
+# settings.py
 
 # Application definition
 
@@ -228,3 +229,7 @@ LOGGING = {
     },
 
 }
+
+BASE_URL = "http://0.0.0.0:8000"
+MEDIA_URL = '/media/'  # URL for accessing media files
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media') 
