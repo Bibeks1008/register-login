@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'django_filters',
     'rest_framework_simplejwt',
+    'corsheaders',
     'user',
     'Abstraction',
     'upload',
@@ -59,6 +60,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'project.urls'
@@ -233,3 +235,6 @@ LOGGING = {
 BASE_URL = "http://0.0.0.0:8000"
 MEDIA_URL = '/media/'  # URL for accessing media files
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media') 
+
+CORS_ORIGIN_ALLOW_ALL = True
+

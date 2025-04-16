@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Folder Upload API Tester</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, button {
+            margin-bottom: 15px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #folderPath {
+            margin-bottom: 5px;
+        }
+        pre {
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-left: 3px solid #4CAF50;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+        .error {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+        .loading {
+            background-color: #d9edf7;
+            color: #31708f;
+        }
+        #fileList {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+        }
+        .file-item {
+            padding: 3px;
+            border-bottom: 1px solid #eee;
+        }
+        .folder-path {
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <h1>Folder Upload API Tester</h1>
+    
+    <div class="container">
+        <h2>Configuration</h2>
+        <div>
+            <label for="apiUrl">API URL:</label>
+            <input type="text" id="apiUrl" value="http://0.0.0.0:8000/api/upload-directory/">
+        </div>
+        <div>
+            <label for="token">JWT Token:</label>
+            <input type="text" id="token" placeholder="Enter your JWT token here">
+        </div>
+    </div>
+    
+    <div class="container">
+        <h2>Upload Folder</h2>
+        <div>
+            <label for="folderInput">Select Folder:</label>
+            <input type="file" id="folderInput" webkitdirectory directory multiple>
+            <div id="folderPath"></div>
+        </div>
+        
+        <div id="fileList"></div>
+        
+        <!-- Ensure the button is outside any <form> tag and has type="button" -->
+        <button id="uploadBtn" type="button">Upload Folder</button>
+    </div>
+    
+    <div class="container">
+        <h2>Results</h2>
+        <div id="status" class="status"></div>
+        <pre id="response"></pre>
+    </div>
+
+    <script>
+        // Elements
+        const apiUrlInput = document.getElementById('apiUrl');
+        const tokenInput = document.getElementById('token');
+        const folderInput = document.getElementById('folderInput');
+        const folderPathDisplay = document.getElementById('folderPath');
+        const fileListDiv = document.getElementById('fileList');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const statusDiv = document.getElementById('status');
+        const responseDiv = document.getElementById('response');
+        
+        // Event listeners
+        folderInput.addEventListener('change', displaySelectedFiles);
+        uploadBtn.addEventListener('click', uploadFolder);
+        
+        // Display selected files with their paths
+        function displaySelectedFiles() {
+            const files = folderInput.files;
+            
+            if (files.length === 0) {
+                folderPathDisplay.textContent = 'No folder selected';
+                fileListDiv.innerHTML = '';
+                return;
+            }
+            
+            // Show folder name (extract from the first file's path)
+            const firstFilePath = files[0].webkitRelativePath;
+            const folderName = firstFilePath.split('/')[0];
+            folderPathDisplay.textContent = `Selected folder: ${folderName} (${files.length} files)`;
+            
+            // Display file list (limited to first 100 for performance)
+            fileListDiv.innerHTML = '';
+            const maxFilesToShow = Math.min(100, files.length);
+            
+            for (let i = 0; i < maxFilesToShow; i++) {
+                const file = files[i];
+                const relativePath = file.webkitRelativePath;
+                
+                const fileDiv = document.createElement('div');
+                fileDiv.className = 'file-item';
+                fileDiv.innerHTML = `
+                    ${file.name} <span class="folder-path">(${relativePath})</span>
+                `;
+                fileListDiv.appendChild(fileDiv);
+            }
+            
+            if (files.length > maxFilesToShow) {
+                const moreDiv = document.createElement('div');
+                moreDiv.className = 'file-item';
+                moreDiv.textContent = `... and ${files.length - maxFilesToShow} more files`;
+                fileListDiv.appendChild(moreDiv);
+            }
+        }
+        
+        // Upload the folder
+        async function uploadFolder(event) {
+            // Prevent the default form submission (which would cause the page to reload)
+            event.preventDefault();
+
+            const apiUrl = apiUrlInput.value.trim();
+            const token = tokenInput.value.trim();
+            const files = folderInput.files;
+
+            // Validate inputs
+            if (!apiUrl) {
+                updateStatus('Please enter API URL', 'error');
+                return;
+            }
+
+            if (!token) {
+                updateStatus('Please enter JWT token', 'error');
+                return;
+            }
+
+            if (files.length === 0) {
+                updateStatus('Please select a folder to upload', 'error');
+                return;
+            }
+
+            // Prepare form data
+            const formData = new FormData();
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const filePath = file.webkitRelativePath;  // Get the relative path including folder structure
+                console.log("log data is ======>  ", filePath)
+                formData.append('files', file);  // Send the file and its relative path
+                formData.append('paths', filePath);
+            }
+
+            // Start upload
+            updateStatus('Uploading folder...', 'loading');
+
+            try {
+                const requestOptions = {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                };
+
+                const response = await fetch(apiUrl, requestOptions);
+
+                const result = await response.json();
+                responseDiv.textContent = JSON.stringify(result, null, 2);
+
+                if (response.ok) {
+                    updateStatus(`Upload successful! Status: ${response.status}`, 'success');
+                } else {
+                    updateStatus(`Upload failed. Status: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                updateStatus(`Error: ${error.message}`, 'error');
+                responseDiv.textContent = error.stack || error.toString();
+            }
+        }
+                
+        // Update status display
+        function updateStatus(message, type) {
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+    </script>
+</body>
+</html>

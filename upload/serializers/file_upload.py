@@ -6,6 +6,6 @@ class FileUploadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = File
-        fields = ["id", "user", "file", "file_path"]
+        fields = ["id", "user", "file", "file_url", "relative_path", "uploaded_at"]
 
-    read_only_fields = ["file_path"]
+    read_only_fields = ["file_url"]
